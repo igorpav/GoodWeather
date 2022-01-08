@@ -27,7 +27,7 @@ class WeatherManager {
                 return
             }
             
-            self?.networkManager.fetchWeather(latitude: coordinates.latitude, longitude: coordinates.longitude) { weather in
+            self?.networkManager.fetchWeather(name: name, latitude: coordinates.latitude, longitude: coordinates.longitude) { weather in
                 completionHandler(weather, nil)
             }
         }

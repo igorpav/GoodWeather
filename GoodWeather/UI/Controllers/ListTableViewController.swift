@@ -11,11 +11,8 @@ class ListTableViewController: UITableViewController {
     
     let weatherManager = WeatherManager()
     
-    var emptyCity = Weather()
-    
-    var citiesArray = [Weather]()
+    var citiesArray = [Weather(name: "Москва"), Weather(name: "Сочи")]
     var filterCityArray = [Weather]()
-    var nameCitiesArray = ["Москва", "Санкт-Петербург", "Казань", "Сочи", "Тюмень", "Ковров", "Дубай", "Нью-Йорк", "Набережные Челны", "Владивосток"]
     
     let searchController = UISearchController(searchResultsController:  nil)
     
@@ -32,10 +29,6 @@ class ListTableViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        if citiesArray.isEmpty {
-            citiesArray = Array(repeating: emptyCity, count: nameCitiesArray.count)
-        }
         
         addCities()
         
@@ -54,7 +47,7 @@ class ListTableViewController: UITableViewController {
     @IBAction func plusButtonPressed(_ sender: Any) {
         alertAddCity(name: "Город", placeholder: "Введите название города") { (city) in
             
-            self.weatherManager.getCityWeather(name: city) { weather, error in
+            self.weatherManager.getCityWeather(name: city) { [self] weather, error in
                 
                 guard let weather = weather else {
                     
@@ -70,24 +63,29 @@ class ListTableViewController: UITableViewController {
                     return
                 }
                 
-                self.nameCitiesArray.append(city)
-                self.emptyCity.name = city
-                self.citiesArray.append(self.emptyCity)
                 
-                let index = self.citiesArray.count - 1
+                if  !self.citiesArray.map({ $0.name.lowercased() }).contains(city.lowercased()) {
                 
-                
-                self.citiesArray[index] = weather
-                self.citiesArray[index].name = self.nameCitiesArray[index]
-                
-                DispatchQueue.main.async {
-                    self.tableView.reloadData()
+                    self.citiesArray.append(weather)
+                    DispatchQueue.main.async {
+                        self.tableView.reloadData()
+                    }
+                    
+                } else {
+                    
+                    let alert = UIAlertController(title: "Ошибка", message: "Такой город уже добавлен. Попробуйте еще раз.", preferredStyle: .alert)
+                    let action = UIAlertAction(title: "ОК", style: .default, handler: nil)
+                    
+                    alert.addAction(action)
+                    
+                    DispatchQueue.main.async {
+                        self.present(alert, animated: true, completion: nil)
+                    }
+                    
+                    return
                 }
-                
             }
-            
         }
-        
     }
     
     private func setupButton() {
@@ -142,12 +140,11 @@ class ListTableViewController: UITableViewController {
     
     func addCities() {
         
-        for city in nameCitiesArray.enumerated() {
+        for city in citiesArray.enumerated() {
             
-            weatherManager.getCityWeather(name: city.element) { weather, error in
-                
+            weatherManager.getCityWeather(name: city.element.name) { weather, error in
+               
                 self.citiesArray[city.offset] = weather!
-                self.citiesArray[city.offset].name = self.nameCitiesArray[city.offset]
                 
                 DispatchQueue.main.async {
                     self.tableView.reloadRows(at: [IndexPath(row: city.offset, section: 0)], with: .fade)
@@ -191,9 +188,9 @@ class ListTableViewController: UITableViewController {
         
         let deleteAction = UIContextualAction(style: .destructive, title: "Удалить") { [self] _, _, completionHandler in
             
-            let editingRow = self.nameCitiesArray[indexPath.row]
+            let editingRow = self.citiesArray[indexPath.row].name
             
-            if let index = self.nameCitiesArray.firstIndex(of: editingRow) {
+            if let index = self.citiesArray.map{$0.name}.firstIndex(of: editingRow) {
                 
                 if self.isFiltering {
                     
